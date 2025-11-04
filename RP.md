@@ -320,7 +320,7 @@ Math.sqrt(2); // ~1.4142
 
 Description
 
-Retourne un flottant pseudo-aléatoire dans [0, 1). Pour obtenir un entier dans un intervalle, combiner avec Math.floor/ceil.
+Retourne un flottant pseudo-aléatoire dans [0, 1]. Pour obtenir un entier dans un intervalle, combiner avec Math.floor/ceil.
 
 ```javascript
 // entier aléatoire entre min (inclus) et max (inclus)
