@@ -80,6 +80,35 @@
 
 > Votre introduction avec notamment les objectifs opérationnels du module.
 
+### Contenu du module
+
+#### Introduction à la programmation fonctionnelle
+
+-   Paradigmes de programmation
+-   Fonctions fléchées
+-   Définition et utilité de la programmation fonctionnelle
+
+#### Fonctions fondamentales
+
+-   `map()`
+-   `filter()`
+-   `reduce()`
+
+#### Concepts de programmation fonctionnelle
+
+-   **First-class citizen**
+-   **Fonctions lambda**
+-   **Immuabilité**
+-   **Fonctions pures**
+-   **Composition de fonctions :**
+    -   Fonctions unaires
+    -   Currying
+    -   Closure
+    -   Fonction _pipe_
+-   **Récursion**
+-   **Builder pattern**
+-   **Refactorisation**
+
 # Opérateurs javascript super-cooool 😎
 
 ## opérateur `?:`
@@ -685,17 +714,31 @@ Description
 Cette méthode (selon l'environnement) regroupe les éléments selon une clé. En pratique on utilise reduce pour compatibilité.
 
 ```javascript
-// exemple simple avec reduce
-const personnes = [
-    { ville: 'Paris', nom: 'A' },
-    { ville: 'Lyon', nom: 'B' },
-    { ville: 'Paris', nom: 'C' },
+const animaux = [
+  { type: "mammifère", nom: "chien" },
+  { type: "oiseau", nom: "moineau" },
+  { type: "mammifère", nom: "chat" },
+  { type: "poisson", nom: "saumon" },
 ];
-const group = personnes.reduce((acc, p) => {
-    (acc[p.ville] ??= []).push(p);
-    return acc;
-}, {});
-// { Paris: [...], Lyon: [...] }
+
+// On regroupe les animaux par type
+const groupes = Object.groupBy(animaux, (a) => a.type);
+
+console.log(groupes);
+//Résultat
+{
+  mammifère: [
+    { type: "mammifère", nom: "chien" },
+    { type: "mammifère", nom: "chat" }
+  ],
+  oiseau: [
+    { type: "oiseau", nom: "moineau" }
+  ],
+  poisson: [
+    { type: "poisson", nom: "saumon" }
+  ]
+}
+
 ```
 
 ## `flatMap()` - chaînage de map() et flat()
@@ -713,9 +756,33 @@ Applique une fonction à chaque élément et aplatit le résultat d'un niveau. P
 Description
 
 Réduit un tableau à une seule valeur en appliquant une fonction accumulateur. Très puissant : sommes, groupements, transformations complexes.
+Exemple 1 :
 
 ```javascript
 [1, 2, 3].reduce((acc, x) => acc + x, 0); // 6
+```
+
+Exemple 2 :
+
+```javascript
+const produits = [
+    { categorie: 'fruit', nom: 'pomme' },
+    { categorie: 'légume', nom: 'carotte' },
+    { categorie: 'fruit', nom: 'banane' },
+];
+
+const groupés = produits.reduce((acc, p) => {
+    // Si la catégorie n'existe pas encore, on la crée
+    if (!acc[p.categorie]) {
+        acc[p.categorie] = [];
+    }
+    // On ajoute le produit dans la bonne catégorie
+    acc[p.categorie].push(p.nom);
+    return acc;
+}, {});
+
+console.log(groupés);
+// → { fruit: ["pomme", "banane"], légume: ["carotte"] }
 ```
 
 ## `reverse()` - inverser l'ordre du tableau
@@ -814,5 +881,13 @@ ou
 ```
 
 # Conclusion
+
+Ce module 323 m’a vraiment appris une nouvelle façon de penser le code : la programmation fonctionnelle. Au début, ce n’était pas facile de changer mes habitudes, car j’avais tendance à coder de manière plus « classique », avec des boucles et des conditions. Mais petit à petit, en pratiquant, j’ai commencé à comprendre l’intérêt d’utiliser des fonctions comme map(), filter() ou reduce().
+
+Ces outils m’ont permis d’écrire du code plus simple, plus propre et souvent plus efficace. J’ai aussi compris que la programmation fonctionnelle, ce n’est pas juste une autre manière de faire la même chose, mais une façon différente de structurer sa logique pour que le code soit plus clair.
+
+Certaines notions, comme reduce(), m’ont pris un peu plus de temps à comprendre, mais avec les exercices et les exemples du cours, ça a fini par faire sens. Maintenant, j’arrive mieux à transformer ou regrouper des données sans forcément passer par des boucles compliquées.
+
+En résumé, ce module m’a vraiment fait progresser. Il m’a appris à réfléchir autrement, à mieux utiliser les outils de JavaScript et à écrire du code plus réfléchi. Je sais que j’ai encore des choses à améliorer, mais je sens déjà une vraie évolution dans ma façon de coder.
 
 > Votre conclusion avec les éléments usuels
