@@ -880,6 +880,387 @@ ou
 (() => { ... })()
 ```
 
+# Exemple de code fonctionnel et commenté
+
+```js
+// ===========================================================================
+// Gestion des événements et affichage des résultats
+// ===========================================================================
+
+// Quand la page est complètement chargée, on ajoute les événements sur les boutons
+window.addEventListener('load', (event) => {
+    // Chaque bouton déclenche une action correspondant à un rapport spécifique
+    document.querySelector('#idActionA1').addEventListener('click', actionA1);
+    document.querySelector('#idActionA2').addEventListener('click', actionA2);
+    document.querySelector('#idActionA3').addEventListener('click', actionA3);
+    document.querySelector('#idActionA4').addEventListener('click', actionA4);
+    document.querySelector('#idActionA5').addEventListener('click', actionA5);
+    document.querySelector('#idActionA6').addEventListener('click', actionA6);
+    document.querySelector('#idActionA7').addEventListener('click', actionA7);
+    document.querySelector('#idActionA8').addEventListener('click', actionA8);
+    document.querySelector('#idActionA9').addEventListener('click', actionA9);
+    document.querySelector('#idActionA10').addEventListener('click', actionA10);
+    document.querySelector('#idActionA11').addEventListener('click', actionA11);
+    document.querySelector('#idActionA12').addEventListener('click', actionA12);
+});
+
+// ---------------------------------------------------------------------------
+// Fonction d'affichage dans la page
+// ---------------------------------------------------------------------------
+function afficherObjet(resultat) {
+    // Récupère le conteneur HTML avec l'id "output"
+    const container = document.getElementById('output');
+    // Affiche l'objet passé en argument sous forme JSON avec indentation
+    container.innerHTML = JSON.stringify(resultat, null, 3);
+}
+
+// ===========================================================================
+// RAPPORTS
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// A1 : Somme des km parcourus pour les véhicules de type "Moyenne"
+// ---------------------------------------------------------------------------
+function actionA1() {
+    // Filtre les locations pour ne garder que les véhicules de type "Moyenne"
+    const vMyenne = jsonData.locations.filter(location => location.vehicule.vehicule_type === "Moyenne");
+
+    // Additionne tous les km parcourus pour ces véhicules
+    const resultat = vMyenne.reduce((acc, location) => {
+        acc += location.location.location_km;
+        return acc;
+    }, 0);
+
+    // Affiche le résultat
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A2 : Les types de véhicules de Mobilus, sans doublons et triés par nom
+// ---------------------------------------------------------------------------
+function actionA2() {
+    // On récupère tous les types de véhicules
+    const vType = [...new Set(
+        jsonData.locations.map(location => location.vehicule.vehicule_type)
+    )].sort(); // Supprime les doublons et trie par ordre alphabétique
+
+    afficherObjet(vType);
+}
+
+// ---------------------------------------------------------------------------
+// A3 : Les véhicules de Mobilus regroupés par type et triés
+// ---------------------------------------------------------------------------
+function actionA3() {
+    // Reduce permet de créer un objet où chaque clé est un type de véhicule
+    const resultat = jsonData.locations.reduce((acc, location) => {
+        const veh = location.vehicule;
+        // Si le type n'existe pas encore, on crée un tableau vide
+        if (!acc[veh.vehicule_type]) {
+            acc[veh.vehicule_type] = [];
+        }
+
+        // Crée une description unique du véhicule
+        const description = `${veh.vehicule_nom} [${veh.vehicule_id}], à ${veh.vehicule_prix_par_jour} Frs/jour et ${veh.vehicule_prix_par_km} Frs/km`;
+
+        // Ajoute le véhicule si il n'est pas déjà présent
+        if (!acc[veh.vehicule_type].includes(description)) {
+            acc[veh.vehicule_type].push(description);
+        }
+
+        return acc;
+    }, {});
+
+    // Tri les véhicules de chaque type par ordre alphabétique
+    Object.keys(resultat).forEach(key => {
+        resultat[key].sort();
+    });
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A4 : Liste des clients du plus jeune au plus ancien, puis par nom_prenom
+// ---------------------------------------------------------------------------
+function actionA4() {
+    // On crée un tableau de clients avec leur nom complet et date de naissance
+    const client = jsonData.locations.flatMap(location => {
+        const fullName = location.client.client_nom.toUpperCase() + " " + location.client.client_prenom;
+        return {
+            nom_prenom: fullName,
+            date_naissance: location.client.client_date_naissance
+        }
+    })
+    // Trie les clients par date de naissance (du plus jeune au plus ancien)
+    .sort((a, b) => {
+        const dateA = new Date(a.date_naissance.split('.').reverse().join('-'));
+        const dateB = new Date(b.date_naissance.split('.').reverse().join('-'));
+        if (dateA < dateB) return -1;
+        if (dateA > dateB) return 1;
+        if (dateA === dateB) return a.nom_prenom.localeCompare(b.nom_prenom);
+    });
+
+    // Supprime les doublons
+    const uniqueClients = client.filter((client, index, self) =>
+        index === self.findIndex((c) => (
+            c.nom_prenom === client.nom_prenom && c.date_naissance === client.date_naissance
+        ))
+    );
+
+    afficherObjet(uniqueClients);
+}
+
+// ---------------------------------------------------------------------------
+// A5 : Résultat global sur la période (CA total, jours, km, nbre locations)
+// ---------------------------------------------------------------------------
+function actionA5() {
+    // Reduce pour calculer cumulativement CA, nombre de locations, jours et km
+    const resultat = jsonData.locations.reduce((acc, location) => {
+        const loc = location.location;
+        const veh = location.vehicule;
+
+        return {
+            ca : acc.ca + (loc.location_jours * veh.vehicule_prix_par_jour) + (loc.location_km * veh.vehicule_prix_par_km),
+            location : acc.location + 1,
+            jour : acc.jour + loc.location_jours,
+            km : acc.km + loc.location_km
+        };
+    }, {
+        ca: 0,
+        location: 0,
+        jour: 0,
+        km: 0
+    });
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A6 : Résultat des véhicules sur la période, triés par CA
+// ---------------------------------------------------------------------------
+function actionA6() {
+    // On groupe les locations par véhicule avec un objet accumulatif
+    const acc = jsonData.locations.reduce((acc, location) => {
+        const loc = location.location;
+        const veh = location.vehicule;
+
+        // Si véhicule non présent dans l'objet, on l'initialise
+        if (!acc[veh.vehicule_id]) {
+            acc[veh.vehicule_id] = {
+                vehicule_id: veh.vehicule_id,
+                vehicule_type: veh.vehicule_type,
+                vehicule_nom: veh.vehicule_nom,
+                vehicule_prix_par_jour: veh.vehicule_prix_par_jour,
+                vehicule_prix_par_km: veh.vehicule_prix_par_km,
+                ca: 0,
+                locations: 0,
+                jours: 0,
+                km: 0
+            };
+        }
+
+        // Ajouter les valeurs de la location au véhicule
+        acc[veh.vehicule_id].ca += (loc.location_jours * veh.vehicule_prix_par_jour) + (loc.location_km * veh.vehicule_prix_par_km);
+        acc[veh.vehicule_id].locations += 1;
+        acc[veh.vehicule_id].jours += loc.location_jours;
+        acc[veh.vehicule_id].km += loc.location_km;
+
+        return acc;
+    }, {});
+
+    // Transformer l'objet en tableau et trier par CA décroissant
+    const resultat = Object.values(acc).sort((a, b) => b.ca - a.ca);
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A7 : Locations d'un client spécifique >12 jours, triées par date
+// ---------------------------------------------------------------------------
+function actionA7() {
+    const idClient = "IDC-32CE80"; // ID du client à filtrer
+    const maxDay = 12;             // Durée minimale des locations
+
+    const resultat = jsonData.locations
+        // Filtre les locations du client spécifique
+        .filter(location => location.client.client_id === idClient)
+        // Transforme en objet simplifié
+        .map(location => ({
+            date: location.location.location_date,
+            jours: location.location.location_jours,
+            km: location.location.location_km,
+            vehicule_id: location.vehicule.vehicule_id,
+            vehicule_nom: location.vehicule.vehicule_nom
+        }))
+        // Filtre les locations supérieures à maxDay
+        .filter(location => location.jours > maxDay)
+        // Trie par date croissante
+        .sort((a, b) => {
+            const dateA = new Date(a.date.split('.').reverse().join('-'));
+            const dateB = new Date(b.date.split('.').reverse().join('-'));
+            return dateA - dateB;
+        });
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A8 : Liste des incidents, triés par date
+// ---------------------------------------------------------------------------
+function actionA8() {
+    const resultat = jsonData.locations
+        .map(location => ({
+            date: location.location.location_date,
+            incident: location.location.incident_details,
+            vehicule: `${location.vehicule.vehicule_nom} [${location.vehicule.vehicule_id}]`,
+            client: location.client.client_nom.toUpperCase() + " " + location.client.client_prenom
+        }))
+        // Garde uniquement les locations avec incidents
+        .filter(location => location.incident !== null)
+        // Trie par date croissante
+        .sort((a, b) => {
+            const dateA = new Date(a.date.split('.').reverse().join('-'));
+            const dateB = new Date(b.date.split('.').reverse().join('-'));
+            return dateA - dateB;
+        });
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A9 : TOP 5 des meilleurs clients
+// ---------------------------------------------------------------------------
+function actionA9() {
+    const top = 5; // Nombre de clients à retourner
+
+    // On regroupe les locations par client et calcule leurs statistiques
+    const resultat = jsonData.locations.reduce((acc, location) => {
+        const client = location.client;
+        const nomPrenom = client.client_nom.toUpperCase() + " " + client.client_prenom;
+
+        if (!acc[nomPrenom]) {
+            acc[nomPrenom] = {
+                nom_prenom: nomPrenom,
+                date_naissance: client.client_date_naissance,
+                age_str: client.client_age_str,
+                locations_nbre: 0,
+                locations_jours: 0,
+                locations_km: 0,
+                locations_ca: 0
+            };
+        }
+
+        acc[nomPrenom].locations_nbre += 1;
+        acc[nomPrenom].locations_jours += location.location.location_jours;
+        acc[nomPrenom].locations_km += location.location.location_km;
+        acc[nomPrenom].locations_ca += (location.location.location_jours * location.vehicule.vehicule_prix_par_jour)
+                                      + (location.location.location_km * location.vehicule.vehicule_prix_par_km);
+
+        return acc;
+    }, {});
+
+    // Transforme en tableau, trie par CA décroissant et garde le top 5
+    const resultatArray = Object.values(resultat)
+        .sort((a, b) => b.locations_ca - a.locations_ca)
+        .slice(0, top);
+
+    afficherObjet(resultatArray);
+}
+
+// ---------------------------------------------------------------------------
+// A10 : Âge moyen des conducteurs des véhicules accidentés
+// ---------------------------------------------------------------------------
+function actionA10() {
+    const resultat = jsonData.locations.reduce((acc, location) => {
+        const veh = location.vehicule;
+        const cli = location.client;
+
+        // Initialisation du véhicule si nécessaire
+        if (!acc[veh.vehicule_nom]) {
+            acc[veh.vehicule_nom] = {
+                vehicule_nom: veh.vehicule_nom,
+                vehicule_id: veh.vehicule_id,
+                total_age: 0,
+                total_clients: 0
+            };
+        }
+
+        // Ajouter l'âge du client si incident présent
+        if (location.location.has_incident) {
+            acc[veh.vehicule_nom].total_age += cli.client_age_ans;
+            acc[veh.vehicule_nom].total_clients += 1;
+        }
+
+        return acc;
+    }, {});
+
+    // Calcul de la moyenne et tri décroissant
+    const resultatFinal = Object.values(resultat).map(veh => ({
+        vehicule: `${veh.vehicule_nom} [${veh.vehicule_id}]`,
+        moyenne_age: veh.total_clients > 0 ? veh.total_age / veh.total_clients : 0
+    }))
+    .filter(veh => veh.moyenne_age > 0)
+    .sort((a, b) => b.moyenne_age - a.moyenne_age);
+
+    afficherObjet(resultatFinal);
+}
+
+// ---------------------------------------------------------------------------
+// A11 : CA réalisé mois par mois
+// ---------------------------------------------------------------------------
+function actionA11() {
+    const resultat = jsonData.locations.reduce((acc, location) => {
+        const loc = location.location;
+        const veh = location.vehicule;
+
+        // Convertit le mois en index (0 = janvier)
+        const mois = parseInt(loc.location_date.split(".")[1], 10) - 1;
+
+        // Ajoute le CA de la location au mois correspondant
+        acc[mois] += loc.location_jours * veh.vehicule_prix_par_jour + loc.location_km * veh.vehicule_prix_par_km;
+        return acc;
+    }, Array(12).fill(0)) // Initialise un tableau de 12 mois
+      .map(x => x.toFixed(2)); // Arrondit chaque valeur à 2 décimales
+
+    afficherObjet(resultat);
+}
+
+// ---------------------------------------------------------------------------
+// A12 : Statistiques km pour "Kia Picanto" type "Petite citadine"
+// ---------------------------------------------------------------------------
+function actionA12() {
+    const name = "Kia Picanto";
+    const typeV = "Petite citadine";
+
+    // Filtre les locations pour ce type et nom de véhicule
+    const locationsFiltrees = jsonData.locations.filter(location => location.vehicule.vehicule_nom === name && location.vehicule.vehicule_type === typeV);
+
+    // Groupe les km par ID de véhicule
+    const groupe = locationsFiltrees.reduce((acc, location) => {
+        const id = location.vehicule.vehicule_id;
+        if (!acc[id]) acc[id] = [];
+        acc[id].push(location.location.location_km);
+        return acc;
+    }, {});
+
+    // Calcul min, max et moyenne
+    const resultat = Object.keys(groupe).map(id => {
+        const km_min = Math.min(...groupe[id]);
+        const km_max = Math.max(...groupe[id]);
+        const km_avg = groupe[id].reduce((sum, km) => sum + km, 0) / groupe[id].length;
+        return {
+            vehicule_id: id,
+            km_min: km_min,
+            km_max: km_max,
+            km_moy: parseFloat(km_avg.toFixed(2))
+        };
+    });
+
+    afficherObjet(resultat);
+}
+
+```
+
+
 # Conclusion
 
 Ce module 323 m’a vraiment appris une nouvelle façon de penser le code : la programmation fonctionnelle. Au début, ce n’était pas facile de changer mes habitudes, car j’avais tendance à coder de manière plus « classique », avec des boucles et des conditions. Mais petit à petit, en pratiquant, j’ai commencé à comprendre l’intérêt d’utiliser des fonctions comme map(), filter() ou reduce().
